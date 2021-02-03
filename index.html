@@ -1,0 +1,97 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>NDEx to Cytoscape.js Demo</title>
+    <script src="https://unpkg.com/cytoscape-cx2js@0.6.4/build/bundle.js"></script>
+    <script src="https://unpkg.com/cytoscape@3.8.0/dist/cytoscape.min.js"></script>
+</head>
+
+<style>
+    #cy {
+        background-color: white;
+        width: 100%;
+        height: 600px;
+        top: 0px;
+        left: 0px;
+        z-index: 0;
+        letter-spacing: 1px;
+    }
+</style>
+
+<body>
+    <div id="cy"></div>
+    <h1>NDEX to Cytoscape.js Demo</h1>
+
+    <script>
+
+        function loadJSON(file, callback) {
+            var xobj = new XMLHttpRequest();
+            xobj.overrideMimeType("application/json");
+            xobj.open('GET', file, true); // Replace 'my_data' with the path to your file
+            xobj.onreadystatechange = function () {
+                if (xobj.readyState == 4 && xobj.status == "200") {
+                    // Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
+                    callback(xobj.responseText);
+                }
+            };
+            xobj.send(null);
+        }
+
+        const NDEX_URL = 'http://public.ndexbio.org/'
+        const DEFAULT_UUID = '0f066d06-5d8e-11ea-bfdc-0ac135e8bacf'
+
+        const ndexUrl = NDEX_URL;
+        const uuid = DEFAULT_UUID;
+
+        const cxUrl = ndexUrl + 'v2/network/' + uuid;
+
+        loadJSON(cxUrl, function (r1) {
+
+            var date = new Date();
+            var startTime = date.getTime();
+
+            var rawCX = JSON.parse(r1)
+
+            var utils = new cytoscapeCx2js.CyNetworkUtils()
+
+            var niceCX = utils.rawCXtoNiceCX(rawCX);
+
+            var cx2Js = new cytoscapeCx2js.CxToJs(utils);
+
+            var attributeNameMap = {};
+
+            var elements = cx2Js.cyElementsFromNiceCX(niceCX, attributeNameMap);
+
+            var style = cx2Js.cyStyleFromNiceCX(niceCX, attributeNameMap);
+
+            console.info('style:', style);
+
+            var cyBackgroundColor = cx2Js.cyBackgroundColorFromNiceCX(niceCX);
+
+            var layout = cx2Js.getDefaultLayout();
+
+            var zoom = cx2Js.cyZoomFromNiceCX(niceCX);
+
+            var pan = cx2Js.cyPanFromNiceCX(niceCX);
+
+            document.getElementById('cy').style.backgroundColor = cyBackgroundColor;
+
+            var cytoscapeJS = {
+                container: document.getElementById('cy'),
+                style: style,
+                elements: elements,
+                layout: layout
+            };
+
+            var cy = cytoscape(cytoscapeJS);
+            cy.fit()
+            date = new Date();
+            var endTime = date.getTime();
+            console.info('cytoscape js init time: ' + (endTime - startTime) + ' milliseconds');
+        });
+    </script>
+</body>
+
+</html>
